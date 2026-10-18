@@ -1,0 +1,74 @@
+{
+  "dataset": {
+    "name": "DTU",
+    "num_subjects": 18,
+    "trials_per_subject": 60,
+    "total_trials": 1080,
+    "sampling_rate_hz": 64,
+    "eeg_bandpass_hz": [1.0, 6.0],
+    "raw_data_dir": "data/dtu",
+    "cache_dir": "data/processed_dtu",
+    "audio_mapping_file": "data/audio_mapping.json"
+  },
+  "montage": {
+    "num_channels": 8,
+    "channel_indices_0indexed": [13, 46, 43, 23, 50, 0, 52, 14],
+    "channel_labels_biosemi": ["C5", "FCz", "FC6", "P9", "C6", "Fp1", "TP8", "T7"],
+    "selection_method": "Global ridge-regression decoder weights across 18 subjects (analysis/discover_channels_fast.py)"
+  },
+  "audio_preprocessing": {
+    "filterbank": "Gammatone",
+    "num_subbands": 28,
+    "freq_range_hz": [50.0, 8000.0],
+    "spacing": "ERB",
+    "power_compression_gamma": 0.6,
+    "lowpass_envelope_hz": 8.0,
+    "output_sampling_rate_hz": 64
+  },
+  "model": {
+    "architecture": "ContrastiveMatchNet",
+    "eeg_encoder": "EEGNet",
+    "audio_encoder": "AudioEncoder",
+    "eeg_channels": 8,
+    "audio_channels": 28,
+    "latent_dim": 64,
+    "dropout": 0.2
+  },
+  "training": {
+    "window_sec": 5.0,
+    "hop_sec": 2.0,
+    "batch_size": 64,
+    "learning_rate": 0.001,
+    "optimizer": "AdamW",
+    "weight_decay": 0.01,
+    "loss": "contrastive_loss",
+    "margin": 0.2,
+    "evaluation_protocol": "Leave-One-Subject-Out (LOSO) across 18 subjects"
+  },
+  "confidence_model": {
+    "type": "XGBoost",
+    "model_hyperparameters": {
+      "n_estimators": 100,
+      "max_depth": 3,
+      "learning_rate": 0.05,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8,
+      "random_state": 42
+    },
+    "features": [
+      "margin",
+      "sim_chosen",
+      "sim_unchosen",
+      "rolling_std_margin",
+      "trial_consistency"
+    ],
+    "leakage_safeguard": "Label-invariant formulation; no direct target stream identity encoded",
+    "reported_metrics": {
+      "full_model_auroc": 0.8057,
+      "margin_only_auroc": 0.6601,
+      "selective_coverage_70pct_accuracy": 0.8155,
+      "selective_coverage_50pct_accuracy": 0.8600,
+      "selective_threshold_tau": 0.65
+    }
+  }
+}

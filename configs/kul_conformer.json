@@ -1,0 +1,74 @@
+{
+  "dataset": {
+    "name": "KUL",
+    "num_subjects": 16,
+    "trials_per_subject": 20,
+    "total_trials": 320,
+    "sampling_rate_hz": 64,
+    "eeg_bandpass_hz": [1.0, 8.0],
+    "rereferencing": "Common Average Reference (CAR) across 64 channels prior to 8-channel selection",
+    "raw_data_dir": "data/kul",
+    "cache_dir": "data/processed_kul"
+  },
+  "montage": {
+    "num_channels": 8,
+    "channel_labels": ["T7", "C2", "FT8", "P7", "CPz", "Fp1", "TP8", "C3"]
+  },
+  "audio_preprocessing": {
+    "filterbank": "Gammatone",
+    "num_subbands": 28,
+    "freq_range_hz": [50.0, 8000.0],
+    "spacing": "ERB",
+    "power_compression_gamma": 0.6,
+    "lowpass_envelope_hz": 8.0,
+    "output_sampling_rate_hz": 64
+  },
+  "model": {
+    "architecture": "AADConformer",
+    "in_channels": 8,
+    "temporal_filters": 32,
+    "spatial_filters": 64,
+    "embed_dim": 64,
+    "num_heads": 4,
+    "num_layers": 2,
+    "dropout": 0.3,
+    "stride": 4
+  },
+  "training": {
+    "window_sec": 10.0,
+    "batch_size": 32,
+    "epochs": 40,
+    "learning_rate": 0.0005,
+    "optimizer": "AdamW",
+    "weight_decay": 0.01,
+    "loss": "negative_pearson_loss",
+    "random_seeds": [1, 7, 21, 42, 123],
+    "evaluation_protocol": "Leave-One-Subject-Out (LOSO) across 16 subjects",
+    "reported_metrics": {
+      "grand_mean_accuracy": 0.7712,
+      "grand_std_accuracy": 0.0999,
+      "seed_1_mean_accuracy": 0.7188
+    }
+  },
+  "confidence_model": {
+    "type": "Evidential Multi-Task Confidence Head",
+    "training_strategy": "Outlier Exposure (OE) with random/scrambled EEG samples",
+    "loss": "custom_multitask_loss(recon_loss + lambda_conf * bce_loss)",
+    "lambda_conf": 0.5,
+    "features": [
+      "z_pool (64-dim latent average)",
+      "corr_a",
+      "corr_b",
+      "margin (corr_a - corr_b)",
+      "z_norm"
+    ],
+    "reported_metrics": {
+      "auroc": 0.7337,
+      "ece": 0.0998,
+      "brier_score": 0.2115,
+      "selective_threshold_tau": 0.70,
+      "selective_accuracy": 0.9494,
+      "coverage": 0.1232
+    }
+  }
+}

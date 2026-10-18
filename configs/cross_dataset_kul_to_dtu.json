@@ -1,0 +1,27 @@
+{
+  "experiment": "Cross-Dataset Zero-Shot Evaluation (KUL -> DTU)",
+  "source_dataset": "KUL",
+  "target_dataset": "DTU",
+  "model": {
+    "architecture": "AADConformer",
+    "checkpoint": "checkpoints/kul/model_S1.pt",
+    "status": "Locally generated weights (from train_conformer_loso.py); strictly zero-shot transfer"
+  },
+  "constraints": {
+    "target_retraining": false,
+    "target_finetuning": false,
+    "target_parameter_selection": false
+  },
+  "evaluation": {
+    "num_target_subjects": 18,
+    "trials_per_subject": 60,
+    "total_target_trials": 1080,
+    "window_sec": 5.0,
+    "evaluation_metric": "Accumulated Pearson correlation across concatenated 5s windows per trial",
+    "reported_metrics": {
+      "accumulated_pearson_trial_accuracy": 0.6824,
+      "majority_vote_trial_accuracy": 0.5426,
+      "window_level_accuracy": 0.5284
+    }
+  }
+}
