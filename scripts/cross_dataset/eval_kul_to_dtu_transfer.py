@@ -148,14 +148,36 @@ def exact_original_evaluation(model, device, paths, mapping, envelopes, dtu_indi
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="Zero-Shot Cross-Dataset Transfer (KUL -> DTU)")
-    parser.add_argument("--dtu_dir", type=str, default=str(REPO_ROOT / "data" / "dtu"), help="Path to DTU dataset directory")
+    dtu_default = REPO_ROOT / "data" / "dtu"
+    if not dtu_default.exists() or not list(dtu_default.glob("S*.mat")):
+        kaggle_candidate = Path("/kaggle/input/datasets/lokeshgile/dataset-eeg")
+        if kaggle_candidate.exists() and list(kaggle_candidate.glob("S*.mat")):
+            dtu_default = kaggle_candidate
+
+    parser.add_argument("--dtu_dir", type=str, default=str(dtu_default), help="Path to DTU dataset directory")
     parser.add_argument("--checkpoint", type=str, default=str(REPO_ROOT / "checkpoints" / "kul" / "model_S1.pt"), help="Path to trained KUL Conformer checkpoint")
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     ckpt_path = Path(args.checkpoint)
     dtu_dir = Path(args.dtu_dir)
+    
+    if not ckpt_path.exists():
+        # Fallbacks for checkpoint
+        alt_paths = [
+            REPO_ROOT / "checkpoints" / "kul" / "model_S1.pt",
+            REPO_ROOT / "checkpoints" / "kul_multitask" / "model_S1.pt",
+            REPO_ROOT / "results" / "conformer_loso" / "model_S1.pt"
+        ]
+        for alt in alt_paths:
+            if alt.exists():
+                ckpt_path = alt
+                break
+                
+    if not dtu_dir.exists() or not list(dtu_dir.glob("S*.mat")):
+        kaggle_candidate = Path("/kaggle/input/datasets/lokeshgile/dataset-eeg")
+        if kaggle_candidate.exists() and list(kaggle_candidate.glob("S*.mat")):
+            dtu_dir = kaggle_candidate
         
     print_header("STEP 1 — DATA LOADING AUDIT")
     print(f"Checkpoint path: {ckpt_path}")
