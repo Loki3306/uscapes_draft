@@ -276,6 +276,9 @@ def main():
             if val_margin > best_val_margin:
                 best_val_margin = val_margin
                 torch.save(model.state_dict(), ckpt_path)
+                kul_mt_dir = REPO_ROOT / "checkpoints" / "kul_multitask"
+                kul_mt_dir.mkdir(parents=True, exist_ok=True)
+                torch.save(model.state_dict(), kul_mt_dir / f"model_{test_subject}.pt")
                 
         print(f"Fold completed. Best Val Margin: {best_val_margin:.4f}")
         loso_results[test_subject] = float(best_val_margin)
