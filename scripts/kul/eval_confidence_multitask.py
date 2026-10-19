@@ -172,7 +172,15 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description="Evaluate Learned Evidential Confidence on KUL")
     parser.add_argument("--cache_dir", type=str, default=str(REPO_ROOT / "data" / "processed_kul"), help="Path to preprocessed KUL cache directory")
-    parser.add_argument("--checkpoint_dir", type=str, default=str(REPO_ROOT / "checkpoints" / "kul"), help="Path to trained multitask checkpoints")
+    default_mt_dir = REPO_ROOT / "checkpoints" / "kul_multitask"
+    if not default_mt_dir.exists():
+        alt_res_dir = REPO_ROOT / "results" / "run7_multitask_conformer_loso"
+        if alt_res_dir.exists():
+            default_mt_dir = alt_res_dir
+        else:
+            default_mt_dir = REPO_ROOT / "checkpoints" / "kul"
+            
+    parser.add_argument("--checkpoint_dir", type=str, default=str(default_mt_dir), help="Path to trained multitask checkpoints")
     parser.add_argument("--out_dir", type=str, default=str(REPO_ROOT / "results" / "run7_multitask_evaluation"), help="Output directory for results")
     args = parser.parse_args()
 
@@ -187,9 +195,15 @@ def main():
     print(f"Using device: {device}")
     
     if not checkpoint_dir.exists():
-        print(f"[Notice] Multi-task checkpoints not found at {checkpoint_dir}.")
-        print("Please run `scripts/kul/train_conformer_multitask_loso.py` first.")
-        return
+        # Fallback check
+        if (REPO_ROOT / "checkpoints" / "kul_multitask").exists():
+            checkpoint_dir = REPO_ROOT / "checkpoints" / "kul_multitask"
+        elif (REPO_ROOT / "results" / "run7_multitask_conformer_loso").exists():
+            checkpoint_dir = REPO_ROOT / "results" / "run7_multitask_conformer_loso"
+        else:
+            print(f"[Notice] Multi-task checkpoints not found at {checkpoint_dir}.")
+            print("Please run `scripts/kul/train_conformer_multitask_loso.py` first.")
+            return
         
     try:
         loader = KULCachedLoader(cache_dir)
@@ -213,8 +227,18 @@ def main():
         print(f"Processing Subject {subj}...")
         ckpt_path = checkpoint_dir / f"model_{subj}.pt"
         if not ckpt_path.exists():
-            print(f"  [Error] Checkpoint not found: {ckpt_path}. Skipping.")
-            continue
+            alt_ckpt = checkpoint_dir / f"multitask_conformer_seed_1_fold_{subj}.pt"
+            alt_res = REPO_ROOT / "results" / "run7_multitask_conformer_loso" / f"multitask_conformer_seed_1_fold_{subj}.pt"
+            alt_mt = REPO_ROOT / "checkpoints" / "kul_multitask" / f"model_{subj}.pt"
+            if alt_ckpt.exists():
+                ckpt_path = alt_ckpt
+            elif alt_res.exists():
+                ckpt_path = alt_res
+            elif alt_mt.exists():
+                ckpt_path = alt_mt
+            else:
+                print(f"  [Error] Checkpoint not found: {ckpt_path}. Skipping.")
+                continue
             
         model = AADConformer(in_channels=8).to(device)
         model.load_state_dict(torch.load(ckpt_path, map_location=device))
