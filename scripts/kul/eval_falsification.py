@@ -48,8 +48,15 @@ def evaluate_trial_majority_vote(predicted: np.ndarray, wav_a: np.ndarray, wav_b
     return trial_correct, total_windows, correct_windows
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Evaluate Falsification Battery on KUL")
+    parser.add_argument("--cache_dir", type=str, default=str(REPO_ROOT / "data" / "processed_kul"), help="Path to preprocessed KUL cache directory")
+    parser.add_argument("--checkpoint_dir", type=str, default=str(REPO_ROOT / "checkpoints" / "kul"), help="Path to trained KUL checkpoints")
+    parser.add_argument("--out_dir", type=str, default=str(REPO_ROOT / "results" / "conformer_loso" / "falsification"), help="Output directory for falsification results")
+    args = parser.parse_args()
+
     print("Loading KUL Cache...")
-    cache_dir = REPO_ROOT / "data" / "processed_kul"
+    cache_dir = Path(args.cache_dir)
         
     if not cache_dir.exists():
         print(f"KUL Cache not found at {cache_dir}.")
@@ -61,13 +68,13 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    checkpoint_dir = REPO_ROOT / "checkpoints" / "kul"
+    checkpoint_dir = Path(args.checkpoint_dir)
         
     if not checkpoint_dir.exists():
         print(f"Checkpoints not found at {checkpoint_dir}")
         return
         
-    out_dir = REPO_ROOT / "results" / "conformer_loso" / "falsification"
+    out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     
     subjects = sorted(list(all_subject_data.keys()))
@@ -119,7 +126,7 @@ def main():
             print(f"Missing checkpoint for {test_subject}")
             continue
             
-        model.load_state_dict(torch.load(checkpoint_path, map_location=device, weights_only=True))
+        model.load_state_dict(torch.load(checkpoint_path, map_location=device))
         model.eval()
         
         test_trials = all_subject_data[test_subject]
