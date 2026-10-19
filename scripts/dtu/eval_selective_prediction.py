@@ -175,5 +175,17 @@ def main():
     case_B.to_csv('analysis/figures/behavior_audit/pathological_case_B.csv', index=False)
     print("Pathological cases exported to CSV in analysis/figures/behavior_audit/")
 
+    print("\n" + "="*50)
+    print("TASK 8: SELECTIVE PREDICTION COVERAGE SWEEP")
+    print("="*50)
+    print(f"{'Threshold (tau)':<16} | {'Coverage':<10} | {'Selective Acc':<14} | {'Accepted N':<10}")
+    print("-" * 56)
+    for tau in [0.0, 0.40, 0.50, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90]:
+        mask = df['confidence'] >= tau
+        cov = mask.mean()
+        acc = df.loc[mask, 'correct'].mean() if mask.sum() > 0 else np.nan
+        print(f"{tau:<16.2f} | {cov*100:<9.1f}% | {acc*100:<13.2f}% | {mask.sum():<10}")
+    print("="*50)
+
 if __name__ == "__main__":
     main()
