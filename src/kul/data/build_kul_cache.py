@@ -10,7 +10,7 @@ from pathlib import Path
 import argparse
 
 # Add project root to path
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT))
 
 from src.dtu.data.extract_gammatone_envelopes import extract_gammatone_envelopes
@@ -55,7 +55,7 @@ def load_kul_trials(mat_path):
         trials = [trials]
     return trials
 
-def preprocess_trial(trial, envelope_cache, apply_car=True):
+def preprocess_trial(trial, envelope_cache, stimuli_dir=None, apply_car=True):
     try:
         eeg_data = trial.RawData.EegData
         fs_eeg = trial.FileHeader.SampleRate
@@ -103,9 +103,10 @@ def preprocess_trial(trial, envelope_cache, apply_car=True):
     unatt_wav_name = str(stimuli[1] if att_ear == 'L' else stimuli[0]).strip()
     
     # Direct path construction
-    stimuli_dir = os.path.join(REPO_ROOT, "data", "kul", "stimuli")
-    if not os.path.exists(stimuli_dir):
-        stimuli_dir = os.path.join(REPO_ROOT, "data", "audio-klu", "stimuli")
+    if stimuli_dir is None:
+        stimuli_dir = os.path.join(REPO_ROOT, "data", "kul", "stimuli")
+        if not os.path.exists(stimuli_dir):
+            stimuli_dir = os.path.join(REPO_ROOT, "data", "audio-klu", "stimuli")
         
     att_wav_path = os.path.join(stimuli_dir, att_wav_name)
     unatt_wav_path = os.path.join(stimuli_dir, unatt_wav_name)
@@ -138,8 +139,8 @@ def preprocess_trial(trial, envelope_cache, apply_car=True):
         
     return eeg_norm[:min_len].T, env_att[:, :min_len], env_unatt[:, :min_len], "Success"
 
-def build_cache(dataset_dir=None, output_dir="data/processed_kul"):
-    out_path = REPO_ROOT / output_dir
+def build_cache(dataset_dir=None, stimuli_dir=None, output_dir="data/processed_kul"):
+    out_path = Path(output_dir) if Path(output_dir).is_absolute() else REPO_ROOT / output_dir
     out_path.mkdir(parents=True, exist_ok=True)
     
     subject_files = get_kul_subject_files(dataset_dir)
@@ -168,7 +169,7 @@ def build_cache(dataset_dir=None, output_dir="data/processed_kul"):
             sys.stdout.write(f"\r  Trial {i+1}/{len(trials)}")
             sys.stdout.flush()
             
-            x, ya, yb, reason = preprocess_trial(t, computed_envelope_cache, apply_car=True)
+            x, ya, yb, reason = preprocess_trial(t, computed_envelope_cache, stimuli_dir=stimuli_dir, apply_car=True)
             if x is not None:
                 att_ear = t.attended_ear
                 stimuli = t.stimuli
@@ -207,7 +208,8 @@ def build_cache(dataset_dir=None, output_dir="data/processed_kul"):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset_dir", type=str, default=None, help="Path to KUL dataset")
+    parser.add_argument("--stimuli_dir", type=str, default=None, help="Path to KUL audio stimuli directory")
     parser.add_argument("--output_dir", type=str, default="data/processed_kul", help="Directory to save .pt files")
     args = parser.parse_args()
     
-    build_cache(args.dataset_dir, args.output_dir)
+    build_cache(dataset_dir=args.dataset_dir, stimuli_dir=args.stimuli_dir, output_dir=args.output_dir)
