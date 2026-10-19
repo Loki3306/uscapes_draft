@@ -284,9 +284,9 @@ def main():
                 mean_corr_unatt /= total_val_samples
                 epoch_val_margin = mean_corr_att - mean_corr_unatt
                 
-                fold_history["train_loss"].append(train_loss)
-                fold_history["val_loss"].append(val_loss)
-                fold_history["val_margin"].append(epoch_val_margin)
+                fold_history["train_loss"].append(float(train_loss))
+                fold_history["val_loss"].append(float(val_loss))
+                fold_history["val_margin"].append(float(epoch_val_margin))
                 
                 print(f"Fold {test_subject} - Epoch {epoch}/{epochs} | Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | Val Margin: {epoch_val_margin:.4f}")
                 
@@ -398,7 +398,7 @@ def main():
             all_seeds_results[str(seed)] = loso_results
             summary_file = out_dir / "conformer_loso_multiseed_summary.json"
             with open(summary_file, 'w') as f:
-                json.dump(all_seeds_results, f, indent=4)
+                json.dump(all_seeds_results, f, indent=4, default=lambda x: float(x) if isinstance(x, (np.floating, np.integer)) else x.tolist() if isinstance(x, np.ndarray) else str(x))
             
     print("\n====================================================")
     print("ALL FOLDS COMPLETED FOR ALL SEEDS")

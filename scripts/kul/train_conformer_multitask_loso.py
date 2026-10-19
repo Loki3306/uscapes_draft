@@ -285,7 +285,7 @@ def main():
     print(f"Mean Validation Margin across 16 subjects: {mean_margin:.4f}")
     
     with open(out_dir / f"multitask_conformer_val_results.json", "w") as f:
-        json.dump(loso_results, f, indent=4)
+        json.dump(loso_results, f, indent=4, default=lambda x: float(x) if isinstance(x, (np.floating, np.integer)) else x.tolist() if isinstance(x, np.ndarray) else str(x))
         
 if __name__ == "__main__":
     main()
