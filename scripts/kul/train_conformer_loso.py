@@ -110,9 +110,17 @@ def prepare_data(subject_data, window_sec=10, hop_sec=2, fs=64):
 
 def main():
     import random
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Train KUL AAD-Conformer under LOSO")
+    parser.add_argument("--cache_dir", type=str, default="data/processed_kul", help="Path to preprocessed KUL cache directory")
+    parser.add_argument("--seeds", type=int, nargs="+", default=[1], help="Random seeds to train (default: [1])")
+    parser.add_argument("--epochs", type=int, default=15, help="Training epochs per fold (default: 15)")
+    parser.add_argument("--num_folds", type=int, default=None, help="Number of folds to evaluate (default: all 16)")
+    args = parser.parse_args()
     
     print("Loading KUL Cache...")
-    cache_dir = REPO_ROOT / "data" / "processed_kul"
+    cache_dir = Path(args.cache_dir) if Path(args.cache_dir).is_absolute() else REPO_ROOT / args.cache_dir
         
     try:
         loader = KULCachedLoader(cache_dir)
@@ -128,8 +136,9 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     
     subjects = sorted(list(all_subject_data.keys()))
+    subjects_to_run = subjects[:args.num_folds] if args.num_folds else subjects
     
-    SEEDS = [1, 7, 21, 42, 123]
+    SEEDS = args.seeds
     all_seeds_results = {}
     
     for seed in SEEDS:
@@ -149,7 +158,7 @@ def main():
         checkpoint_dir = out_dir / "checkpoints" / f"seed_{seed}"
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
         
-        for test_subject in subjects:
+        for test_subject in subjects_to_run:
             print(f"\n{'='*60}")
             print(f"Starting LOSO Fold: Test Subject = {test_subject} | Seed = {seed}")
             print(f"{'='*60}")
@@ -191,7 +200,7 @@ def main():
             
             optimizer = optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
             
-            epochs = 15
+            epochs = args.epochs
             best_val_margin = -float('inf')
             patience = 4
             patience_counter = 0
@@ -295,9 +304,12 @@ def main():
                     stopped_epoch = epoch
                     break
                     
-            # Save checkpoint for Phase 2 (Window Scaling)
+            # Save checkpoint for Phase 2 (Window Scaling) and downstream evaluation
             checkpoint_path = checkpoint_dir / f"model_{test_subject}.pt"
             torch.save(best_model_state, checkpoint_path)
+            canonical_kul_dir = REPO_ROOT / "checkpoints" / "kul"
+            canonical_kul_dir.mkdir(parents=True, exist_ok=True)
+            torch.save(best_model_state, canonical_kul_dir / f"model_{test_subject}.pt")
             
             # --- EVALUATE ON HELD-OUT TEST SET (ONCE) ---
             print(f"--- Evaluating Test Subject: {test_subject} ---")
