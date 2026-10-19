@@ -148,6 +148,8 @@ def exact_original_evaluation(model, device, paths, mapping, envelopes, dtu_indi
 
 def main():
     import argparse
+    parser = argparse.ArgumentParser(description="Zero-Shot Cross-Dataset Transfer (KUL -> DTU)")
+    
     dtu_default = REPO_ROOT / "data" / "dtu"
     if not dtu_default.exists() or not list(dtu_default.glob("S*.mat")):
         kaggle_candidate = Path("/kaggle/input/datasets/lokeshgile/dataset-eeg")
