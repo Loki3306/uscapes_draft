@@ -48,12 +48,12 @@ def pearson_corr(x, y, dim=1):
     var_y = (y_centered ** 2).sum(dim=dim)
     return cov / torch.sqrt(var_x * var_y + 1e-8)
 
-def export_predictions(checkpoint_dir, out_csv, eeg_model="eegnet", channels=[13, 46, 43, 23, 50, 0, 52, 14], lowcut=1.0, highcut=6.0, window_sec=10.0):
+def export_predictions(checkpoint_dir, out_csv, eeg_model="eegnet", channels=[13, 46, 43, 23, 50, 0, 52, 14], lowcut=1.0, highcut=6.0, window_sec=10.0, data_dir=None):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Exporting predictions using device: {device}")
     
     mapping, envelopes = get_mapping_data()
-    all_paths = subject_files()
+    all_paths = subject_files(data_dir=data_dir)
     
     if not all_paths:
         print("No subjects found.")
@@ -130,6 +130,7 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint_dir", type=str, default="checkpoints")
     parser.add_argument("--out_csv", type=str, default="matchnet_predictions.csv")
     parser.add_argument("--window_sec", type=float, default=10.0, help="Window duration in seconds")
+    parser.add_argument("--data_dir", type=str, default=None, help="Directory containing DTU preprocessed subject MAT files")
     args = parser.parse_args()
     
-    export_predictions(args.checkpoint_dir, args.out_csv, window_sec=args.window_sec)
+    export_predictions(args.checkpoint_dir, args.out_csv, window_sec=args.window_sec, data_dir=args.data_dir)
