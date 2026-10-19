@@ -112,6 +112,7 @@ def export_predictions(checkpoint_dir, out_csv, eeg_model="eegnet", channels=[13
                         'window_id': chunk['window_id'],
                         'sim_A': round(sim_a, 4),
                         'sim_B': round(sim_b, 4),
+                        'margin': round(abs(sim_a - sim_b), 4),
                         'prediction': prediction,
                         'label': 'A', # Ground truth is always A (wavA)
                         'speaker_gender': chunk['label'], # The original label (1 or 2) was just male/female

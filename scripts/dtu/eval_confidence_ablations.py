@@ -73,6 +73,8 @@ def add_temporal_features(df):
     df = df.sort_values(['subject_id', 'trial_id', 'window_id']).reset_index(drop=True)
     df['sim_chosen'] = df[['sim_A', 'sim_B']].max(axis=1)
     df['sim_unchosen'] = df[['sim_A', 'sim_B']].min(axis=1)
+    if 'margin' not in df.columns:
+        df['margin'] = (df['sim_chosen'] - df['sim_unchosen']).abs()
     df['rolling_std_margin'] = df.groupby(['subject_id', 'trial_id'])['margin'].rolling(window=5, min_periods=1).std().reset_index(level=[0,1], drop=True)
     df['rolling_std_margin'] = df['rolling_std_margin'].fillna(0.0)
     
@@ -92,7 +94,7 @@ def add_temporal_features(df):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--csv", type=str, default="subject_distance_predictions.csv")
+    parser.add_argument("--csv", type=str, default="matchnet_predictions.csv")
     args = parser.parse_args()
     
     print("Loading data...")
